@@ -12,8 +12,8 @@ class Player:
       setattr(self, key, value)
 
 class GameClient:
-  def __init__(self, uri, user, character, auth, width=1440, height=900, scale="2"):
-    self.uri = uri
+  def __init__(self, server, user, character, auth, width=1440, height=900, scale="2"):
+    self.server = server
     self.user = user
     self.character = character
     self.auth = auth
@@ -21,7 +21,9 @@ class GameClient:
     self.height = height
     self.scale = scale
 
-    self.websocket = uwebsockets.client.connect(uri)
+    self.websocket = uwebsockets.client.connect(f'wss://{server}.adventure.land:2053/socket.io/?EIO=4&transport=websocket')
+    print("Connected")
+    print("Sending hello to server..")
     self.websocket.send("40")
     
     self.entities = {"players": {}, "monsters": {}}
@@ -30,6 +32,9 @@ class GameClient:
     self.sent_loaded = False
     self._running = True
     _thread.start_new_thread(self.main_loop, ())
+    print("Waiting for player data...")
+    while not self.player:
+      time.sleep(0.1)
 
   def main_loop(self):
     while self._running:
@@ -39,14 +44,12 @@ class GameClient:
           self.websocket.send("3")
         if resp.startswith("42["):
           data = json.loads(resp[2:-1])
-          if data[0] == "welcome" and not self.sent_loaded:
-            self._send_screen_info()
-            self.sent_loaded = True
-          elif not self.sent_auth:
-            self._send_auth()
+          if data[0] == "welcome" and not self.sent_loaded:self._send_screen_info()
+          elif not self.sent_auth:self._send_auth()
           elif data[0] == "entities" and self.sent_auth:
             self._update_entities(data[1])
             if self.player is None:
+              # This triggers player data
               self.websocket.send('42["use",{"item":"hp"}]')
           elif data[0] == "player" and self.sent_auth:
             if not self.player:
@@ -55,6 +58,7 @@ class GameClient:
               self.player.update(data[1])
 
   def _send_screen_info(self):
+    print("Sending screen info...")
     screen_info = {
       "success": 1,
       "width": self.width,
@@ -62,8 +66,10 @@ class GameClient:
       "scale": self.scale
     }
     self.websocket.send(f'42["loaded",{json.dumps(screen_info)}]')
+    self.sent_loaded = True
 
   def _send_auth(self):
+    print("Sending auth...")
     auth_data = {
       "user": self.user,
       "character": self.character,
