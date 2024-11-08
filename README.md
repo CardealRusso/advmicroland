@@ -14,7 +14,7 @@ client = GameClient(
 
 while client.running():
   cardeal = client.entities["players"].get("Cardeal")
-  if cardeal and client.player:
+  if cardeal:
     client.move(x=cardeal["x"], y=cardeal["y"])
 ```
 
