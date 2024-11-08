@@ -6,7 +6,7 @@ Toy project
 from src.game_client import GameClient
 
 client = GameClient(
-  uri="wss://usd1.adventure.land:2053/socket.io/?EIO=4&transport=websocket",
+  server="usd1",
   user="USERCODE",
   character="CHARACTERCODE",
   auth="AUTHCODE"
