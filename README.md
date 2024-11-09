@@ -24,3 +24,4 @@ Currently has:
 - auth
 - entities (players and monsters)
 - move
+- get_entity
