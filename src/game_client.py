@@ -14,7 +14,7 @@ class Entity:
   def __getitem__(self, key):
     return getattr(self, key)
 
-class GameClient:
+class _GameClient:
   def __init__(self, server, user, character, auth, width=1440, height=900, scale="2"):
     self.server = server
     self.user = user
@@ -41,9 +41,6 @@ class GameClient:
     print("Waiting for player data...")
     while not self.player:
       time.sleep(0.1)
-
-  def get_entity(self, entity_id):
-    return self.entities.get(entity_id)
 
   def main_loop(self):
     while self._running:
@@ -97,20 +94,24 @@ class GameClient:
       for entity in entity_list:
         self.entities[entity["id"]] = Entity(entity)
 
-  def move(self, *args):
-    """
-    Move to a position. Can be called in two ways:
-    - move(x, y)
-    - move(entity)
-    """
-    if len(args) == 2:
-      x, y = args
-    else:
-      x, y = args[0].x, args[0].y
+_client = None
 
-    move_message = f'42["move",{{"x":{self.player.x},"y":{self.player.y},"going_x":{x},"going_y":{y},"m":0}}]'
-    self.websocket.send(move_message)
+def initbot(server, user, character, auth, **kwargs):
+  global _client
+  _client = _GameClient(server, user, character, auth, **kwargs)
 
-  def running(self):
-    time.sleep(0.5)
-    return self._running
+def get_entity(entity_id):
+  return _client.entities.get(entity_id)
+
+def move(*args):
+  if len(args) == 2:
+    x, y = args
+  else:
+    x, y = args[0].x, args[0].y
+
+  move_message = f'42["move",{{"x":{_client.player.x},"y":{_client.player.y},"going_x":{x},"going_y":{y},"m":0}}]'
+  _client.websocket.send(move_message)
+
+def running():
+  time.sleep(0.5)
+  return _client._running
