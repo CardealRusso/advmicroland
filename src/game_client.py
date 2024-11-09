@@ -31,7 +31,7 @@ class GameClient:
     print("Sending hello to server..")
     self.websocket.send("40")
     
-    self.entities = {"players": {}, "monsters": {}}
+    self.entities = {}
     self.player = None
     self.sent_auth = False
     self.sent_loaded = False
@@ -42,8 +42,8 @@ class GameClient:
     while not self.player:
       time.sleep(0.1)
 
-  def __getitem__(self, key):
-    return self.entities[key]
+  def get_entity(self, entity_id):
+    return self.entities.get(entity_id)
 
   def main_loop(self):
     while self._running:
@@ -93,11 +93,9 @@ class GameClient:
     self.sent_auth = True
 
   def _update_entities(self, data):
-    for entity_type in ["players", "monsters"]:
-      entities = data.get(entity_type, [])
-      self.entities[entity_type].update({
-        e["id"]: Entity(e) for e in entities
-      })
+    for entity_list in [data.get("players", []), data.get("monsters", [])]:
+      for entity in entity_list:
+        self.entities[entity["id"]] = Entity(entity)
 
   def move(self, *args):
     """
