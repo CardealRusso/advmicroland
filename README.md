@@ -3,19 +3,19 @@
 Toy project
 
 ```py
-from src.game_client import GameClient
+from src.game_client import *
 
-client = GameClient(
+initbot(
   server="usd1",
   user="USERCODE",
   character="CHARACTERCODE",
   auth="AUTHCODE"
 )
 
-while client.running():
-  cardeal = client.get_entity("Cardeal")
+while running():
+  cardeal = get_entity("Cardeal")
   if cardeal:
-    client.move(cardeal)
+    move(cardeal)
 ```
 
 https://github.com/user-attachments/assets/74cd17b5-a643-49f7-8da0-0e2477623d2d
