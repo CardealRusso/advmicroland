@@ -1,3 +1,3 @@
-[submodule "uwebsockets"]
+[submodule "src/uwebsockets"]
 	path = src/uwebsockets
-	url = https://github.com/CardealRusso/uwebsockets.git
+	url = https://github.com/CardealRusso/uwebsockets/

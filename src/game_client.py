@@ -1,6 +1,6 @@
 import asyncio
 import json
-import uwebsockets.client
+import .uwebsockets.uwebsockets
 import time
 
 class Entity:
