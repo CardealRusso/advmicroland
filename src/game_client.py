@@ -1,6 +1,6 @@
 import asyncio
 import json
-import .uwebsockets.uwebsockets
+from . import uwebsockets
 import time
 
 class Entity:
@@ -50,29 +50,29 @@ class _GameClient:
 
   async def connect(self):
     while not self.character:
+      await asyncio.sleep(5)
       await self._send_auth()
       await self._send_screen_info()
-      await asyncio.sleep(5)
     print("[aml] character loaded")
 
   async def update_player_data(self):
     if self._running:
       if time.time() - self._last_player_update > 2:
-        self.websocket.send('42["property",{"afk":false}]')
-        self.websocket.send('42["property",{"afk":true}]')
+        await self.websocket.send('42["property",{"afk":false}]')
+        await self.websocket.send('42["property",{"afk":true}]')
         self._last_player_update = time.time()
 
   async def main_loop(self):
-    self.websocket = uwebsockets.client.connect(
+    self.websocket = await uwebsockets.connect(
       f'wss://{self.server}.adventure.land:2053/socket.io/?EIO=4&transport=websocket'
     )
-    self.websocket.send("40")
+    await self.websocket.send("40")
     while self._running:
       asyncio.create_task(self.update_player_data())
-      resp = self.websocket.recv()
+      resp = await self.websocket.recv()
       if resp:
         if resp == "2":
-          self.websocket.send("3")
+          await self.websocket.send("3")
         if resp.startswith("42["):
           data = json.loads(resp[2:-1])
           if data[0] == "game_error" or data[0] == "game_log":
@@ -99,7 +99,7 @@ class _GameClient:
   async def _send_screen_info(self):
     print("[aml] sending screen info")
     screen_info = {"success": 1, "width": self.width, "height": self.height, "scale": self.scale}
-    self.websocket.send(f'42["loaded",{json.dumps(screen_info)}]')
+    await self.websocket.send(f'42["loaded",{json.dumps(screen_info)}]')
     self.sent_loaded = True
 
   async def _send_auth(self):
@@ -108,7 +108,7 @@ class _GameClient:
       "user": self.user, "character": self.charcode, "code_slot": self.charcode, "auth": self.auth,
       "width": self.width, "height": self.height, "scale": self.scale
     }
-    self.websocket.send(f'42["auth", {json.dumps(auth_data)}]')
+    await self.websocket.send(f'42["auth", {json.dumps(auth_data)}]')
     self.sent_auth = True
 
   def _update_entities(self, data):
@@ -166,18 +166,18 @@ def is_in_range(entity):
   return distance(character, entity) <= character.range
 
 async def _attack_async(entity):
-  _client.websocket.send(f'42["attack",{{"id":"{entity.id}"}}]')
+  await _client.websocket.send(f'42["attack",{{"id":"{entity.id}"}}]')
 
 async def _move_async(*args):
   x, y = (args[0].x, args[0].y) if len(args) == 1 else args
   move_message = f'42["move",{{"x":{character.x},"y":{character.y},"going_x":{x},"going_y":{y},"m":0}}]'
-  _client.websocket.send(move_message)
+  await _client.websocket.send(move_message)
 
 async def _use_hp_or_mp_async():
   if character.hp <= 0.75 * character.max_hp:
-    _client.websocket.send('42["use",{"item":"hp"}]')
+    await _client.websocket.send('42["use",{"item":"hp"}]')
   elif character.mp <= 0.75 * character.max_mp:
-    _client.websocket.send('42["use",{"item":"mp"}]')
+    await _client.websocket.send('42["use",{"item":"mp"}]')
 
 async def _running_async():
   await asyncio.sleep_ms(50)
