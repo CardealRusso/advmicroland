@@ -176,6 +176,13 @@ async def _running_async():
   await asyncio.sleep_ms(50)
   return _client._running
 
+async def _respawn_async():
+  await _client.websocket.send('42["respawn"]')
+  return True
+
+def respawn():
+  return asyncio.run(_respawn_async())
+
 def attack(entity):
   return asyncio.run(_attack_async(entity))
 
