@@ -63,31 +63,35 @@ class _GameClient:
   async def main_loop(self):
     self.websocket = async_websocket_client.AsyncWebsocketClient()
     await self.websocket.handshake(f'wss://{self.server}.adventure.land:2053/socket.io/?EIO=4&transport=websocket')
+    await self.websocket.send("40")
     while self._running:
       asyncio.create_task(self.update_player_data())
       id, data = game_utils.parse_socketio(await self.websocket.recv())
-      if id == 2: await self.websocket.send('3')
-      if id == 0: await self.websocket.send('40')
-      if id == 42:
-        if data[0] == 'game_error' or data[0] == 'game_log':
-          print(f'[{data[0]}] {data[1]}')
-        if data[0] == 'welcome':
-          await self._send_screen_info()
-          if not self.sent_auth:
+      resp = await self.websocket.recv()
+      if resp:
+        if resp == "2":
+          await self.websocket.send("3")
+        if resp.startswith("42["):
+          data = json.loads(resp[2:-1])
+          if data[0] == "game_error" or data[0] == "game_log":
+            print(f'[{data[0]}] {data[1]}')
+          if data[0] == "welcome" and not self.sent_loaded:
+            await self._send_screen_info()
+          elif not self.sent_auth:
             await self._send_auth()
-        if data[0] == "entities" and self.sent_auth:
-          self._update_entities(data[1])
-        if data[0] == "player" and self.sent_auth:
-          self._last_player_update = time.time()
-          if not self.character:
-            self.character = Entity(data[1], "player")
-            self.character_event.set()
-          else:
-            self.character.update(data[1])
-        if data[0] == "death" and self.sent_auth:
-          entity_id = data[1].get("id")
-          if entity_id and entity_id in self.entities:
-            del self.entities[entity_id]
+          elif data[0] == "entities" and self.sent_auth:
+            self._update_entities(data[1])
+          elif data[0] == "player" and self.sent_auth:
+            self._last_player_update = time.time()
+            if not self.character:
+              self.character = Entity(data[1], "player")
+              self.character_event.set()
+            else:
+              self.character.update(data[1])
+          elif data[0] == "death" and self.sent_auth:
+            entity_id = data[1].get("id")
+            if entity_id and entity_id in self.entities:
+              del self.entities[entity_id]
 
   async def _send_screen_info(self):
     print("[aml] sending screen info")
